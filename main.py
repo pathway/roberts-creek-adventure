@@ -4,8 +4,11 @@ from pprint import pprint
 
 global rooms
 rooms = { 
-  'throne': { 'descr':'''You are in a giant throne room.
-  To the west is a door.  To the east is a funny smelling tunnel.''', 
+  'throne': { 'descr':'''You are in a vast throne room.  It seems like it was recently (and hastily) redecorated.
+
+To the west is a door.
+  
+To the east is a funny smelling tunnel.''', 
   'moves': { 'e':'rathole1','w':'courtyard' }
   },
   'courtyard': { 'descr':'''A courtyard.
@@ -21,7 +24,11 @@ rooms = {
   },
 
   'rathole1': { 'descr':'''This place can only be described as a rathole.  The tunnel continues to the east.  You see a speck of light from the west. ''', 
-  'moves': { 'w':'throne','e':'rathole2' } 
+  'moves': { 'w':'throne','e':'rathole2','s':'hiddenroom' } 
+  },
+  'hiddenroom' : { 'descr':'''You are in a tiny room.
+  ''', 
+  'moves': { 'n':'rathole1', } 
   },
 
   'rathole2': { 'descr':'''A deep dark tunnel continues to the west.  A faint light from the east.''', 
@@ -35,7 +42,52 @@ rooms = {
 items = {
   'axe': 'A rusty axe',
   'pinecone': 'The most beautifule pinecone you have ever seen. It glows a bit...',
-  'notebook': 'A dusty leather-bound notebook with lovely handwriting.',
+  'notebook': '''A dusty leather-bound notebook with lovely handwriting. Upon it is written:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   Spellcaster's First Guide
+   ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+~ lightbloom ~
+
+This lovely spell is great for entertaining 
+yourself and your friends!
+
+~ flyingcarpet ~
+
+This powerful spell lets you get out of 
+trouble fast. But careful, it is very hard 
+to control where you end up!
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  ''',
+
+  'redscroll': '''A red tinted scroll tied by a ribbon.  It looks very, very old and a bit dusty.
+  Unrolling it you see:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   Spellcaster's Second Guide
+   ~~~~~~~~~~~~~~~~~~~~~~~~~
+
+~ vitality ~
+
+This ancient spell brings forth the power
+of life itself.  It allows you raise the
+dead, good as new.
+
+~ darkcloud ~
+
+This evil spell of death must only be used 
+in the gravest of moments.  Few can survive 
+its deadly power.  Misuse of this spell is
+grounds for permanent expulsion from the 
+sorcerers guild.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  ''',
+
   'string': 'A string that seems unusually strong',
   'arrow': 'An arrow with three bright blue feathers',
   'needles': 'A pair of shiny knitting needles, well used but in excellent condition',
@@ -50,6 +102,7 @@ rooms['courtyard']['items'].append('axe')
 rooms['basement']['items'].append('notebook')
 rooms['clearing']['items'].append('arrow')
 rooms['woodpath']['items'].append('needles')
+rooms['hiddenroom']['items'].append('redscroll')
 
 global characters
 characters = {
@@ -69,9 +122,18 @@ characters = {
   },
   'oldlady': {'items':['wool'],'state':None,'move_prob':0.0,'say':['If only I had some needles.',]
   }
+}
 
+
+spells = {
+  'vitality': { 'ok': 'A glow slowly appears from your palms and extends out in a giant ball, encompassing everything and everyone nearby...','fail': '*fizzle*' },
+  'flyingcarpet': { 'ok': 'A square of light appears below you and lifts you up, up .... suddenly your are spinning very fast and confused!  It sets you down.  You blink and look around....','fail': '*fizzle*' },
+  'darkcloud': { 'ok': 'A putrid cloud slowly fills the room.  You cough your lungs out!  When it finally clears, you it is strangely quiet...','fail': '*fizzle*' },
+  'lightbloom': { 'ok': 'A giant circle of light appears ahead of you.  It begins to pulse, as you hear the most beautiful music eminating from the center. You feel refreshed!','fail': '*fizzle*' },
 
 }
+
+
 
 def place_char(char,where):
   global characters, rooms
@@ -100,28 +162,35 @@ def help():
   print('put item     Put item down')
   print('look item    Look at an item')
   print('inv          Inventory')
-
   print('')
   print('talk to person       Talk to someone')
   print('give item to person  Give something')
   print('kill person          Kill a person')
   print('')
+  print('cast spellname       Cast a spell')
+  print('')
   print('h   Help')
+  print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ')
 
 
-print('-----------------------------')
-print('| ROBERTS CREEK ADVENTURE |')
-print('-----------------------------')
+print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+print(' Roberts Creek Adventure ')
+print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
 print('')
-help()
+print(' h for help ')
 print('')
-print(' ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ')
+print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  ')
 print('')
-print('You awaken as if from an endless sleep.  You do not remember how you arrived here.')
+print('''You awaken as if from an endless sleep.  You do not remember how you arrived here.
+
+You are a young magician...
+
+''')
 print('')
 time.sleep(1.0)
 
 while True:
+
   curroom = rooms[curroom_label]
   print(curroom['descr'])
 
@@ -132,7 +201,7 @@ while True:
 
     if actions and characters[c]['move_prob']>0.0:
       r = random.random()
-      if r>characters[c]['move_prob']:
+      if characters[c]['state'] is None and r>characters[c]['move_prob']:
         pass
       else:
         ra = random.randint(0,len(actions)-1)
@@ -179,10 +248,12 @@ while True:
 
   tokens = reply.split(" ")
 
+  print(' '+'~~~ ' * 10)
+
   action = tokens[0]
 
-  print(action)
-  print("")
+  #print(action)
+  #print("")
 
   if action in ['e','w','n','s','east','west','north','south']:
     action = action[0]
@@ -262,7 +333,6 @@ while True:
         print("They arent here!")
       elif 'axe' in myitems:
         print("You brutally chop up "+who)
-        characters[who]['move_prob']=0.0
         characters[who]['state']='dead'
         print("")
         print("Why would you do such a horrible thing to another being?")
@@ -272,6 +342,35 @@ while True:
         characters[who]['items']=[]
       else:
         print("You dont have a weapon...")
+
+  elif action in ['cast']:
+    if len(tokens)!=2:
+      print("Thats not how you that command works")
+    else:
+      spell = tokens[1]
+      if spell not in spells.keys():
+        print("That isnt a real spell, is it?")
+      else:
+        this_spell = spells[spell]
+        print(this_spell['ok'])
+
+        # if the spell has extra effect logic:
+        if spell=='darkcloud':
+          for who in curroom['who']:
+            characters[who]['state']='dead'
+            for i in characters[who]['items']:
+              rooms[curroom_label]['items'].append(i)
+            characters[who]['items']=[]
+
+        elif spell=='flyingcarpet':
+          curroom_label = random.choice( list(rooms.keys()) )
+
+        elif spell=='vitality':
+          for who in curroom['who']:
+            if characters[who]['state']=='dead':
+              characters[who]['state']=None
+
+        #print(this_spell['fail'])
 
   elif action in ['debug']:
     print('---characters---')
@@ -310,5 +409,5 @@ while True:
 
 
   print(' ')
-  print(' ~~~ ')
+  #print(' ~~~ ')
   print('')
