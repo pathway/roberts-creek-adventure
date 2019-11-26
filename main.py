@@ -19,8 +19,11 @@ To the east is a funny smelling tunnel.''',
   To the south is an old stone building. To the north is a clearing.''', 
   'moves': { 's':'courtyard','n':'clearing' } 
   },
-  'clearing': { 'descr':'''A small clearing in a dense wood.''', 
-  'moves': { 's':'courtyard','n':'clearing' } 
+  'clearing': { 'descr':'''A small clearing in a dense wood. To the north it looks rather frosty.''', 
+  'moves': { 's':'woodpath','n':'frostpath', } 
+  },
+  'frostpath': { 'descr':'''An extremely icy path leads north, it looks very hard to pass.''', 
+  'moves': { 's':'clearing', }   #### special
   },
 
   'rathole1': { 'descr':'''This place can only be described as a rathole.  The tunnel continues to the east.  You see a speck of light from the west. ''', 
@@ -118,7 +121,7 @@ characters = {
     'move_prob':1.0,
     'say':['Eeek!!!!','Screech!!!','chhhhiiiiiiiizzzzzzzzz!!!!!']
     },
-  'talkingtree': {'items':['staff'],'state':None,'move_prob':0.0,'say':['There is a notebook in the basement.', 'Be careful of the scarecrow.','The old lady was once the queen of all Terrainia.', ]
+  'talkingtree': {'items':['staff'],'state':None,'move_prob':0.0,'say':['There is a very special notebook in the basement east of the throne room...', 'The old lady was once the queen of all Terrainia. A fine queen she was too, until everything changed...', ]
   },
   'oldlady': {'items':['wool'],'state':None,'move_prob':0.0,'say':['If only I had some needles.',]
   }
@@ -188,21 +191,31 @@ You are a young magician...
 ''')
 print('')
 time.sleep(1.0)
+xray_mode=True
 
 while True:
 
   curroom = rooms[curroom_label]
   print(curroom['descr'])
 
+  if xray_mode:
+    print('\nXray Mode\n~~~~~~~')
+
   # let characters move
   for c in characters:
     croom = characters[c]['where']
     actions = list(rooms[croom]['moves'].keys())
 
+    if characters[c]['move_prob']==0.0:
+        if xray_mode:
+          # debug: show how other chars move
+          print(c + " in "+croom+" *never* moves")
     if actions and characters[c]['move_prob']>0.0:
       r = random.random()
-      if characters[c]['state'] is None and r>characters[c]['move_prob']:
-        pass
+      if characters[c]['state']=='dead' or r>characters[c]['move_prob']:
+        if xray_mode:
+          # debug: show how other chars move
+          print(c + " in "+croom+" does not move")
       else:
         ra = random.randint(0,len(actions)-1)
         action=actions[ra]
@@ -212,8 +225,9 @@ while True:
         rooms[croom]['who'].remove(c)
         rooms[newroom]['who'].append(c)
 
-        # debug: show how other chars move
-        #print(c + " moves with "+action+ " from "+croom+" to "+newroom)
+        if xray_mode:
+          # debug: show how other chars move
+          print(c + " moves  "+action+ " from "+croom+" to "+newroom)
 
         if newroom == curroom_label:
           print("")
@@ -371,6 +385,13 @@ while True:
               characters[who]['state']=None
 
         #print(this_spell['fail'])
+
+  elif action=='xray_mode':
+    if xray_mode:
+      xray_mode=False
+    else:
+      xray_mode=True
+    print('xray_mode',xray_mode)
 
   elif action in ['debug']:
     print('---characters---')
