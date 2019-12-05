@@ -26,6 +26,15 @@ To the east is a funny smelling tunnel.''',
   'moves': { 's':'clearing', }   #### special
   },
 
+  'frostentrance': { 'descr':'''A vast, winter castle forebodes to the North, gisteningly beautiful, and yet very creepy...
+
+  The icy wind blows through your hair and makes your teeth chatter.
+
+  A frosty path leads south.
+.''', 
+  'moves': { 's':'frostpath', }   #### special
+  },
+
   'rathole1': { 'descr':'''This place can only be described as a rathole.  The tunnel continues to the east.  You see a speck of light from the west. ''', 
   'moves': { 'w':'throne','e':'rathole2','s':'hiddenroom' } 
   },
@@ -44,6 +53,7 @@ To the east is a funny smelling tunnel.''',
 
 items = {
   'axe': 'A rusty axe',
+  'staff': 'A wooden staff made from a wizened old tree branch, on the tip is an embedded gem that seems to swirl with florescent green.',
   'pinecone': 'The most beautifule pinecone you have ever seen. It glows a bit...',
   'notebook': '''A dusty leather-bound notebook with lovely handwriting. Upon it is written:
 
@@ -137,7 +147,6 @@ spells = {
 }
 
 
-
 def place_char(char,where):
   global characters, rooms
   characters[char]['where']=where
@@ -152,6 +161,54 @@ place_char('oldlady','courtyard')
 global myitems
 myitems = ['string',]
 curroom_label = 'throne'
+
+
+def plot_move_check(move_type,item=None,who=None):
+
+  if move_type=="talk" and who=="talkingtree":
+
+    # the talkingtree grants the staff
+    if 'staff' in characters[who]['items']:
+      characters[who]['items'].remove('staff')
+      myitems.append('staff')
+
+      print("~~~~~~")
+      print("The talkingtree gifts you a long, strong, very old looking staff!")
+      print("~~~~~~")
+
+    # the oldlady knits you a woolsuit, and the frozen path melts
+  if move_type=="give" and who=="oldlady" and item=='needles' and 'wool' in characters[who]['items']:
+
+    characters[who]['items'].remove('wool')
+    myitems.append('woolsuit')
+
+    characters[who]['say']=[['''Good luck on your mission!''']]
+
+    # melt the frozen path
+    rooms['frostpath']['moves']['n']='frostentrance'
+    rooms['frostpath']['moves']['descr']='''
+    A muddy path leads north, it looks like part of it has melted recently.
+    '''
+
+    print("~~~~~~")
+    print("The oldlady kits you a lovely warm woolsuit!")
+    print("~~~~~~")
+
+
+  if move_type=="kill" and who=="robot":
+
+    # the spell on the oldlady is broken
+    characters['oldlady']['moveprob']=0.666
+    characters['oldlady']['say']=[['''That robot has enslaved us for 47 years.  
+    Thank you for saving our kingdom from his tyranny! 
+    I just cannot stop dancing...''']]
+    print("~~~~~~")
+    print("You hear birds chirping, music rising, and singing... You suddenly want to talk to the oldlady.")
+    print("~~~~~~")
+
+
+
+
 
 def help():
   print('Valid moves are:')
@@ -191,7 +248,7 @@ You are a young magician...
 ''')
 print('')
 time.sleep(1.0)
-xray_mode=True
+xray_mode=False
 
 while True:
 
@@ -285,6 +342,7 @@ while True:
         rooms[curroom_label]['items'].remove(item)
         myitems.append(item)
         print("You get the "+item)
+        plot_move_check(action,item=item,who=None)
       else:
         print('Its not here!')
 
@@ -324,6 +382,7 @@ while True:
         characters[who]['items'].append(item)
         myitems.remove(item)
         print("You give the "+item+" to "+who)
+        plot_move_check(action,item,who)
 
   elif action in ['talk']:
     if len(tokens)!=3:
@@ -337,6 +396,7 @@ while True:
       else:
         saying = random.randint(0,len(characters[who]['say'])-1)
         print(who+" says: "+characters[who]['say'][saying])
+        plot_move_check(action,who=who)
 
   elif action in ['kill']:
     if len(tokens)!=2:
@@ -345,6 +405,8 @@ while True:
       who = tokens[1]
       if who not in curroom['who']:
         print("They arent here!")
+      elif characters[who]['state']=='dead':
+        print("They are already dead!")
       elif 'axe' in myitems:
         print("You brutally chop up "+who)
         characters[who]['state']='dead'
@@ -354,6 +416,7 @@ while True:
         for i in characters[who]['items']:
           rooms[curroom_label]['items'].append(i)
         characters[who]['items']=[]
+        plot_move_check(action,item=None,who=who)
       else:
         print("You dont have a weapon...")
 
