@@ -123,26 +123,34 @@ characters = {
     'items':['gem'],
     'state':None,
     'move_prob':0.1,
+    'mana':0,'mana_regen':0,
     'say':['Leave me be you filthy scum!  But do give me all your precious items first :)']
     },
   'bat': {
     'items':[],
     'state':None,
     'move_prob':1.0,
+    'mana':0,'mana_regen':0,
     'say':['Eeek!!!!','Screech!!!','chhhhiiiiiiiizzzzzzzzz!!!!!']
     },
-  'talkingtree': {'items':['staff'],'state':None,'move_prob':0.0,'say':['There is a very special notebook in the basement east of the throne room...', 'The old lady was once the queen of all Terrainia. A fine queen she was too, until everything changed...', ]
+  'talkingtree': {'items':['staff'],'state':None,'move_prob':0.0, 'mana':0,'mana_regen':0,'say':['There is a very special notebook in the basement east of the throne room...', 'The old lady was once the queen of all Terrainia. A fine queen she was too, until everything changed...', ]
   },
-  'oldlady': {'items':['wool'],'state':None,'move_prob':0.0,'say':['If only I had some needles.',]
-  }
+  'oldlady': {'items':['wool'],'state':None,    'mana':0,'mana_regen':0,
+'move_prob':0.0,'say':['If only I had some needles.',]
+  },
+  'player': {'items':['gem'],'state':None,'move_prob':0.333,    'mana':1,'mana_regen':1,
+'say':['I was just trying to play a game...!',]
+  },
+  'magician': {'items':[],'state':None,'move_prob':0.1,'mana':1000,'mana_regen':10,'say':['There is a one thing you should never, ever, ever do. If I had a gem, I could tell you about it...',]
+  },
 }
 
 
 spells = {
-  'vitality': { 'ok': 'A glow slowly appears from your palms and extends out in a giant ball, encompassing everything and everyone nearby...','fail': '*fizzle*' },
-  'flyingcarpet': { 'ok': 'A square of light appears below you and lifts you up, up .... suddenly your are spinning very fast and confused!  It sets you down.  You blink and look around....','fail': '*fizzle*' },
-  'darkcloud': { 'ok': 'A putrid cloud slowly fills the room.  You cough your lungs out!  When it finally clears, you it is strangely quiet...','fail': '*fizzle*' },
-  'lightbloom': { 'ok': 'A giant circle of light appears ahead of you.  It begins to pulse, as you hear the most beautiful music eminating from the center. You feel refreshed!','fail': '*fizzle*' },
+  'vitality': { 'cost':20, 'ok': 'A glow slowly appears from your palms and extends out in a giant ball, encompassing everything and everyone nearby...','fail': '*fizzle*' },
+  'flyingcarpet': {'cost':10, 'ok': 'A square of light appears below you and lifts you up, up .... suddenly your are spinning very fast and confused!  It sets you down.  You blink and look around....','fail': '*fizzle*' },
+  'darkcloud': { 'cost':20,'ok': 'A putrid cloud slowly fills the room.  You cough your lungs out!  When it finally clears, you it is strangely quiet...','fail': '*fizzle*' },
+  'lightbloom': { 'cost':1,'ok': 'A giant circle of light appears ahead of you.  It begins to pulse, as you hear the most beautiful music eminating from the center. You feel refreshed!','fail': '*fizzle*' },
 
 }
 
@@ -156,11 +164,13 @@ place_char('robot','throne')
 place_char('bat','basement')
 place_char('talkingtree','clearing')
 place_char('oldlady','courtyard')
+place_char('magician','basement')
+place_char('player','throne')
 
 
-global myitems
-myitems = ['string',]
-curroom_label = 'throne'
+me = 'player'
+
+#myitems = ['',]
 
 
 def plot_move_check(move_type,item=None,who=None):
@@ -170,7 +180,7 @@ def plot_move_check(move_type,item=None,who=None):
     # the talkingtree grants the staff
     if 'staff' in characters[who]['items']:
       characters[who]['items'].remove('staff')
-      myitems.append('staff')
+      characters[me]['items'].append('staff')
 
       print("~~~~~~")
       print("The talkingtree gifts you a long, strong, very old looking staff!")
@@ -180,7 +190,7 @@ def plot_move_check(move_type,item=None,who=None):
   if move_type=="give" and who=="oldlady" and item=='needles' and 'wool' in characters[who]['items']:
 
     characters[who]['items'].remove('wool')
-    myitems.append('woolsuit')
+    characters[me]['items'].append('woolsuit')
 
     characters[who]['say']=[['''Good luck on your mission!''']]
 
@@ -191,8 +201,21 @@ def plot_move_check(move_type,item=None,who=None):
     '''
 
     print("~~~~~~")
-    print("The oldlady kits you a lovely warm woolsuit!")
+    print("The oldlady knits you a lovely warm woolsuit!")
     print("~~~~~~")
+
+  if move_type=="give" and who=="magician" and item=='gem':
+
+    print("~~~~~~")
+    print("The old magician comes very close to you.  His breath smells very odd. In a hushed voice he whispers:")
+    print("")
+    print("Never try mindx on another character")
+    print("All kinds of chaos would be unleashed")
+    print("Do not say I didnt warn you!")
+    print("")
+    print("~~~~~~")
+
+    characters[who]['say']=[['''Remember, just dont do it''']]
 
 
   if move_type=="kill" and who=="robot":
@@ -221,6 +244,7 @@ def help():
   print('get item     Pick up item')
   print('put item     Put item down')
   print('look item    Look at an item')
+  print('mana         Check your mana score')
   print('inv          Inventory')
   print('')
   print('talk to person       Talk to someone')
@@ -251,15 +275,23 @@ time.sleep(1.0)
 xray_mode=False
 
 while True:
-
+  curroom_label = characters[me]['where']
   curroom = rooms[curroom_label]
-  print(curroom['descr'])
+  #print("curroom_label",curroom_label)
 
+  print(curroom['descr'])
+  #pprint(rooms)
   if xray_mode:
     print('\nXray Mode\n~~~~~~~')
 
   # let characters move
   for c in characters:
+    characters[c]['mana']+=characters[c]['mana_regen']
+
+    if c==me:
+      # dont force player to move
+      continue
+
     croom = characters[c]['where']
     actions = list(rooms[croom]['moves'].keys())
 
@@ -302,6 +334,8 @@ while True:
   if 'who' in curroom and curroom['who']:
     print('')
     for char in curroom['who']:
+      if char==me:
+        continue  # dont mention ourself
       if characters[char]['items']:
         it = " who has a "+ ", a ".join(characters[char]['items'])
       else:
@@ -313,6 +347,14 @@ while True:
 
   print(' ~~~ ')
   print('')
+
+  if characters[me]['state']=='dead':
+    print("You are dead.  There is not much you can do in this state.")
+    print("")
+    print("GAME OVER")
+    print("")
+    print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    exit(0)
 
   reply = input("What shall you do? ")
   reply = reply.strip().lower()
@@ -329,7 +371,13 @@ while True:
   if action in ['e','w','n','s','east','west','north','south']:
     action = action[0]
     if action in curroom['moves']:
-      curroom_label=curroom['moves'][action]
+      newroom = rooms[curroom_label]['moves'][action]
+
+      rooms[curroom_label]['who'].remove(me)
+      rooms[newroom]['who'].append(me)
+
+      characters[me]['where']=curroom['moves'][action]
+
     else:
       print("Invalid move")
 
@@ -340,7 +388,7 @@ while True:
       item = tokens[1]
       if item in curroom['items']:
         rooms[curroom_label]['items'].remove(item)
-        myitems.append(item)
+        characters[me]['items'].append(item)
         print("You get the "+item)
         plot_move_check(action,item=item,who=None)
       else:
@@ -351,9 +399,9 @@ while True:
       print("Thats not how you that command works")
     else:
       item = tokens[1]
-      if item in myitems:
+      if item in characters[me]['items']:
         rooms[curroom_label]['items'].append(item)
-        myitems.remove(item)
+        characters[me]['items'].remove(item)
         print("You put down the "+item)
       else:
         print('You dont have it!')
@@ -363,7 +411,7 @@ while True:
       print("Thats not how you that command works")
     else:
       item = tokens[1]
-      if item in rooms[curroom_label]['items'] or item in myitems:
+      if item in rooms[curroom_label]['items'] or item in characters[me]['items']:
         print( items[item] )
       else:
         print("That isnt here!")
@@ -374,13 +422,13 @@ while True:
     else:
       item = tokens[1]
       who = tokens[3]
-      if item not in myitems:
+      if item not in characters[me]['items']:
         print("You dont have that!")
       elif who not in curroom['who']:
         print("They arent here!")
       else:
         characters[who]['items'].append(item)
-        myitems.remove(item)
+        characters[me]['items'].remove(item)
         print("You give the "+item+" to "+who)
         plot_move_check(action,item,who)
 
@@ -407,7 +455,7 @@ while True:
         print("They arent here!")
       elif characters[who]['state']=='dead':
         print("They are already dead!")
-      elif 'axe' in myitems:
+      elif 'axe' in characters[me]['items']:
         print("You brutally chop up "+who)
         characters[who]['state']='dead'
         print("")
@@ -429,6 +477,11 @@ while True:
         print("That isnt a real spell, is it?")
       else:
         this_spell = spells[spell]
+        cost = this_spell['cost']
+        if cost > characters[me]['mana']:
+          print("Not enough mana.  It costs ", cost," and you have ",characters[me]['mana'])
+          continue
+
         print(this_spell['ok'])
 
         # if the spell has extra effect logic:
@@ -440,7 +493,7 @@ while True:
             characters[who]['items']=[]
 
         elif spell=='flyingcarpet':
-          curroom_label = random.choice( list(rooms.keys()) )
+          characters[me]['where'] = random.choice( list(rooms.keys()) )
 
         elif spell=='vitality':
           for who in curroom['who']:
@@ -456,6 +509,24 @@ while True:
       xray_mode=True
     print('xray_mode',xray_mode)
 
+  elif action=='mindx':
+    cost=30
+    if characters[me]['mana']<cost:
+        print("Not enough mana.  It costs ", cost," and you have ",characters[me]['mana'])
+        continue
+
+    if len(tokens)!=2:
+      print("Thats not how you that command works")
+    else:
+      who = tokens[1]
+      if who not in curroom['who']:
+        print("They arent here!")
+        #elif characters[who]['state']=='dead':
+        #  print("But they are dead!")
+      else:
+        me=who
+        print("You feel very strange... its a dizzy feeling, and the world is starting to spin.  You black out!  ... and when you come to, you dont quite feel like yourself anymore.")
+
   elif action in ['debug']:
     print('---characters---')
     pprint(characters)
@@ -467,7 +538,7 @@ while True:
     pprint(items)
 
     print('---myitems---')
-    pprint(myitems)
+    pprint(characters[me]['items'])
 
 
 
@@ -475,13 +546,17 @@ while True:
   elif action in ['h','help','?']:
     help()
 
+  elif action in ['mana',]:
+    print("Current mana: ", characters[me]['mana'])
+    print("mana regen: ", characters[me]['mana_regen'])
+
   elif action in ['inv',]:
     print("")
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ')
     print('   Ye Olde Inventorie ')
     print('   ------------------ ')
-    if myitems:
-      print('You have a '+ ", a ".join(myitems) )
+    if characters[me]['items']:
+      print('You have a '+ ", a ".join(characters[me]['items']) )
     else:
       print("You dont have anything")
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ')
