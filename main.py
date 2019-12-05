@@ -52,6 +52,7 @@ To the east is a funny smelling tunnel.''',
 }
 
 items = {
+  'gem': 'A very large, dazzling red gem. It looks very expensive!',
   'axe': 'A rusty axe',
   'staff': 'A wooden staff made from a wizened old tree branch, on the tip is an embedded gem that seems to swirl with florescent green.',
   'pinecone': 'The most beautifule pinecone you have ever seen. It glows a bit...',
@@ -138,7 +139,7 @@ characters = {
   'oldlady': {'items':['wool'],'state':None,    'mana':0,'mana_regen':0,
 'move_prob':0.0,'say':['If only I had some needles.',]
   },
-  'player': {'items':['gem'],'state':None,'move_prob':0.333,    'mana':1,'mana_regen':1,
+  'player': {'items':['string'],'state':None,'move_prob':0.333,    'mana':1,'mana_regen':1,
 'say':['I was just trying to play a game...!',]
   },
   'magician': {'items':[],'state':None,'move_prob':0.1,'mana':1000,'mana_regen':10,'say':['There is a one thing you should never, ever, ever do. If I had a gem, I could tell you about it...',]
@@ -553,7 +554,7 @@ while True:
   elif action in ['inv',]:
     print("")
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ')
-    print('   Ye Olde Inventorie ')
+    print('   Ye Olde Inventorie for',me)
     print('   ------------------ ')
     if characters[me]['items']:
       print('You have a '+ ", a ".join(characters[me]['items']) )
